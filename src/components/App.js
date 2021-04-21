@@ -83,7 +83,7 @@ class App extends Component {
   buyTokens = (etherAmount) => {
     this.setState({ loading: true });
     this.state.ethSwap.methods.buyTokens().send({ value: etherAmount, from: this.state.account }).on('transactionHash', (hash) => {
-      this.setState({ loading: false });
+      this.refreshTokensState();
     });
   }
 
@@ -91,9 +91,14 @@ class App extends Component {
     this.setState({ loading: true });
     this.state.token.methods.approve(this.state.ethSwap.address, tokenAmount).send({ from: this.state.account }).on('transactionHash', (hash) => {
       this.state.ethSwap.methods.sellTokens(tokenAmount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-        this.setState({ loading: false });
+        this.refreshTokensState();
       })
     })
+  }
+
+  refreshTokensState(){
+    // blocking some time for txn to settle down - bad ux! (ideal: instead of reloading, fetch tokens and update the state)
+    setTimeout(async () => { window.location.reload()}, 1500);
   }
 
   render() {
