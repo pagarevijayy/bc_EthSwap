@@ -82,7 +82,7 @@ class App extends Component {
 
   buyTokens = (etherAmount) => {
     this.setState({ loading: true });
-    this.state.ethSwap.methods.buyTokens().send({ value: etherAmount, from: this.state.account }).on('transactionHash', (hash) => {
+    this.state.ethSwap.methods.buyTokens().send({ value: etherAmount, from: this.state.account }).on('confirmation', async (confirmationNumber, receipt) => {
       this.refreshTokensState();
     });
   }
@@ -90,15 +90,28 @@ class App extends Component {
   sellTokens = (tokenAmount) => {
     this.setState({ loading: true });
     this.state.token.methods.approve(this.state.ethSwap.address, tokenAmount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-      this.state.ethSwap.methods.sellTokens(tokenAmount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.ethSwap.methods.sellTokens(tokenAmount).send({ from: this.state.account }).on('confirmation', (confirmationNumber, receipt) => {
         this.refreshTokensState();
       })
     })
   }
 
-  refreshTokensState(){
-    // blocking some time for txn to settle down - bad ux! (ideal: instead of reloading, fetch tokens and update the state)
-    setTimeout(async () => { window.location.reload()}, 1500);
+  async refreshTokensState() {
+
+    // get updated eth and token balance
+    let updatedEthBalance = await window.web3.eth.getBalance(this.state.account);
+
+    let updateTokenBalance = await this.state.token.methods.balanceOf(this.state.account).call();
+
+    // update the state (token balance and loading)
+    this.setState(
+      {
+        ethBalance: updatedEthBalance,
+        tokenBalance: updateTokenBalance.toString(),
+        loading: false
+      }
+    );
+
   }
 
   render() {
