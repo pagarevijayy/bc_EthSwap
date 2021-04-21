@@ -40,7 +40,7 @@ contract('EthSwap', ([deployer, investor]) => {
         })
     });
 
-    describe('buyTokens', async () => {
+    describe('buyTokens()', async () => {
         let result;
         before(async () => {
             // purchase tokens before each example 
@@ -61,7 +61,7 @@ contract('EthSwap', ([deployer, investor]) => {
             const ethSwapEthereumBalance = await web3.eth.getBalance(ethSwap.address)
             assert.strictEqual(ethSwapEthereumBalance.toString(), tokenWeiconverted('1'))
 
-            // check if the event is emitted properly
+            // check logs to ensure event was emitted with the correct data
             const event = result.logs[0].args;
 
             assert.equal(event.account, investor)
@@ -69,5 +69,41 @@ contract('EthSwap', ([deployer, investor]) => {
             assert.equal(event.amount.toString(), tokenWeiconverted('100'))
             assert.equal(event.rate.toString(), '100')
         })
+    });
+
+    describe('sellTokens()', async () => {
+        let result;
+        before(async () => {
+            const tokensToSell = tokenWeiconverted('100');
+
+            // investor must approve the purchase (spending of his token by the smart contract)
+            await token.approve(ethSwap.address, tokensToSell, { from: investor })
+
+            // sell tokens after the approval
+            result = await ethSwap.sellTokens(tokensToSell, { from: investor });
+        })
+
+        it('allows user to sell token at a fixed price instantly', async () => {
+            // check investor TOKEN balance after purchase (should be decreased)
+            const investorBalance = await token.balanceOf(investor);
+            assert.strictEqual(investorBalance.toString(), tokenWeiconverted('0'))
+
+            // check EthSwap TOKEN balance after purchase (should be increased)
+            const ethSwapTokenBalance = await token.balanceOf(ethSwap.address);
+            assert.strictEqual(ethSwapTokenBalance.toString(), tokenWeiconverted('1000000'))
+
+            // check EthSwap ETHER balance after purchase (should be decreased)
+            const ethSwapEthereumBalance = await web3.eth.getBalance(ethSwap.address)
+            assert.strictEqual(ethSwapEthereumBalance.toString(), tokenWeiconverted('0'))
+
+            // check logs to ensure event was emitted with the correct data
+            const event = result.logs[0].args;
+
+            assert.equal(event.account, investor)
+            assert.equal(event.token, token.address)
+            assert.equal(event.amount.toString(), tokenWeiconverted('100'))
+            assert.equal(event.rate.toString(), '100')
+        })
+
     });
 })
