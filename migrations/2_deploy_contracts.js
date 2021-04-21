@@ -9,7 +9,7 @@ module.exports = async function(deployer) {
 
   
   // deploy swap contract
-  await deployer.deploy(EthSwap);
+  await deployer.deploy(EthSwap, token.address);
   const ethSwap = await EthSwap.deployed();
 
   // transfer all tokens to EthSwap (1M)
